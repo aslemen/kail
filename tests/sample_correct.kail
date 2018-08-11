@@ -1,0 +1,38 @@
+S
+    IP-MAT
+        PP-SBJ 0 {TARO}
+            NP
+                NPR
+                    太郎
+            P-OPTR
+                は
+        VB
+            死ん
+        AXD
+            だ
+    ID
+        1;kai_test
+S
+    IP-MAT
+        PP-SBJ 0 {TARO}
+            NP
+                NPR
+                        太郎
+            P-OPTR
+                        は
+        VB
+                        転ん
+        AXD
+                        だ
+    ID
+                        2;kai_test
+
+A
+B
+C
+    D
+    D
+        E
+    F
+                            G
+                            H
