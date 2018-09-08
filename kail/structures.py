@@ -10,35 +10,98 @@ import nltk.tree as trees
 """
 
 class Object_with_Row_Column:
+    """
+        An arbitrary object with the row-column position in the due source document. 
+    """
+
     def __init__(
             self,
             content: object,
             row: int,
             column: int
             ) -> "String_with_Row_Column":
+        """
+            The initializer.
+
+            Parameters
+            ----------
+            content: any
+                An arbitrary object. Retrivable from self.content.
+            row: int
+                The row in the source document (beginning with 0).
+            column: int
+                The column in the source document (beginning with 0).
+        """
         self.content = content
         self.row = row
         self.column = column
 
+        # ===END===
+
     def __repr__(self) -> str:
+        """
+            Give a detailed representation of the instance.
+
+            Returns
+            -------
+            repr: str
+                The information of this instance in the format
+                    "<{label}, Position:({row_add}, {col_add})>"
+                    where
+                        {label} is the content converted to a string,
+                        {row_add} is the row number beginning with 1, and
+                        {col_add} is the column number beginning with 1.
+                Example:
+                    <NP-SBJ, (3, 12)>
+        """
         return "<{label}, Position:({row_add}, {col_add})>".format(
                         label = str(self.content),
                         row_add = self.row + 1,
                         col_add = self.column + 1
                         )
+        # ===END===
     
     def __str__(self) -> str:
+        """
+            Give a simplized representation of the instance, which is merely a string of the content.
+
+            Returns
+            -------
+            repr: str
+                The content as a string.
+        """
         return str(self.content)
 
     # ===END===
 
 class Label_Complex_with_Pos:
+    """
+        A representation of an NPCMJ tree label complex (a triple of label name, ICH index, and sort information) with annotations of row-column information from the source document.
+    """
     def __init__(
             self,
             label: Object_with_Row_Column,
             ICHed: Object_with_Row_Column,
             sort_info: Object_with_Row_Column
             ) -> "Label_with_Pos":
+        """
+            The initializer.
+
+            Parameters
+            ----------
+            label: Object_with_Row_Column[str]
+                A label.
+                Example:
+                    NP-SBJ (for NP-SBJ-3;{ABC})
+            ICHed: Object_with_Row_Column[int]
+                An ICH index. 0 when not specified.
+                Example:
+                    3 (for NP-SBJ-3;{ABC})
+            sort_info: Object_with_Row_Column[str]
+                A sort information. None or "" when not specified.
+                Example:
+                    ABC (for NP-SBJ-3;{ABC})
+        """
         self.label = label
         self.ICHed = ICHed
         self.sort_info = sort_info
@@ -46,6 +109,17 @@ class Label_Complex_with_Pos:
         # ===END===
 
     def __repr__(self):
+        """
+            A detailed representation of this instance.
+
+            Returns
+            -------
+            repr: str
+                The representation of this instance in the format
+                    "{label}-{ICHed};{sort_info}" (the same as NPCMJ)
+                Example:
+                    <NP-SBJ, Position:(1, 4)>-<3, Position:(1, 11)>;<ABC, Position(1, 13)>
+        """
         return "{label}-{ICHed};{sort_info}".format(
                     label = repr(self.label),
                     ICHed = repr(self.ICHed),
@@ -55,10 +129,37 @@ class Label_Complex_with_Pos:
         # ===END===
 
     def __str__(self):
+        """
+            Give the representation of this instance in the NPCMJ style,
+            doing the same as the function print_kai_penn.
+
+            Returns
+            -------
+            repr: str
+                The representation of this instance in the format
+                    "{label}-{ICHed};{sort_info}" (the same as NPCMJ).
+                Example:
+                    NP-SBJ-3;{ABC}
+        """
         return self.print_kai_penn()
 
     @staticmethod
     def parse_from_kai_penn(text: str, current_row: int = -1):
+        """
+        Parse an NPCMJ label to obtain an instance of this class.
+
+        Parameters
+        ----------
+        text: str
+            The label complex to be parsed.
+        current_row: int
+            The current row number in the source document (beginning with 0).
+
+        Returns
+        -------
+        instance: self
+            The instance created from the label text.
+        """
         re_str: "_sre.SRE_Match" = re.compile(
             r"^([_\d\w\-]*?)(?:-([0-9]+))?(?:;({\w+}|\*.*\*|\*))?$"
             )
@@ -96,6 +197,21 @@ class Label_Complex_with_Pos:
     
     @staticmethod
     def parse_from_kail(text: str, current_row: int = -1):
+        """
+        Parse an Kail label to obtain an instance of this class.
+
+        Parameters
+        ----------
+        text: str
+            The label complex to be parsed.
+        current_row: int
+            The current row number in the source document (beginning with 0).
+
+        Returns
+        -------
+        instance: self
+            The instance created from the label text.
+        """
         re_word: "_sre.SRE_Match" = re.compile(r"[^ \t]+")
 
         current_items: typing.Iterable["_sre.SRE_Match"] = re_word.finditer(text)
@@ -168,6 +284,17 @@ class Label_Complex_with_Pos:
         # ===END===
 
     def print_kai_penn(self):
+        """
+            Give the representation of this instance in the NPCMJ style.
+            
+            Returns
+            -------
+            repr: str
+                The representation of this instance in the format
+                    "{label}-{ICHed};{sort_info}" (the same as NPCMJ).
+                Example:
+                    NP-SBJ-3;{ABC}
+        """
         return "{label}{ICHed}{sort_info}".format(
             label = str(self.label),
             ICHed = ("-" + str(self.ICHed)) if self.ICHed.content > 0 else "",
@@ -178,6 +305,20 @@ class Label_Complex_with_Pos:
         # ===END===
 
     def print_kail(self):
+        """
+            Give the representation of this instance in the Kail style.
+            
+            Returns
+            -------
+            repr: str
+                The representation of this instance in the format
+                    "{label} {ICHed} {sort_info}".
+                Examples:
+                    NP-SBJ 3 ABC (corresponding to the NPCMJ representation "NP-SBJ-3;{ABC}")
+                    NP-SBJ 3 ("NP-SBJ-3")
+                    NP-SBJ 0 ABC ("NP-SBJ;{ABC}")
+                    NP-SBJ ("NP-SBJ")
+        """
         return "{label}{ICHed}{sort_info}".format(
             label = str(self.label),
             ICHed = " " + str(self.ICHed) if self.ICHed.content > 0 or self.sort_info.content else "",
@@ -185,13 +326,3 @@ class Label_Complex_with_Pos:
                                 if self.sort_info.content else ""
             )
         # ===END===
-
-#    @staticmethod
-#    def generate_from_match_object(
-#            match: "_sre.SRE_Match",
-#            init_row: int = 0,
-#            init_column: int = 0):
-#        return String_with_Pos(
-#                label = match.group(0),
-#                row = init_row + match.start(),
-#                column = init_column + match.end())
