@@ -87,20 +87,24 @@ def print_kai_penn_indented(
             ## note: calculation of the indent for the second and latter subtrees
             ## ................. (labellabellabel..........label (..... 
             ## ^===[indent]=====^_^====[len(self.label)]=======^_^----------
-            str_subtrees: typing.List[str] = [
-                                    __internal_routine(
-                                        st,
-                                        indent = indent \
-                                                + 1 \
-                                                + len(self_label_raw) \
-                                                + 1,
-                                        show_comments = show_comments
-                                        )
-                                    for st in tree
-                                    ]
+            str_subtrees: typing.List[str] = \
+                list(
+                    filter(
+                        None,
+                        (__internal_routine(
+                            st,
+                            indent = indent \
+                                    + 1 \
+                                    + len(self_label_raw) \
+                                    + 1,
+                            show_comments = show_comments
+                            )
+                        for st in tree)
+                    )
+                )
 
-            # cut out the spaces at the beginning of the first subtree
-            str_subtrees[0] = str_subtrees[0].lstrip()
+            # cut out the spaces at the beginning and the end of the first subtree
+            str_subtrees[0] = str_subtrees[0].strip()
 
             # generate
             return "{indent}({label} {subtrees})".format(

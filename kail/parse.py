@@ -6,14 +6,14 @@ import pathlib
 from nltk.tree import ParentedTree as pt
 import nltk.corpus as corp
 
-import typing as typ
+import typing
 
 from . import structures as strs
 lbcx = strs.Label_Complex_with_Pos
 orc = strs.Object_with_Row_Column
 com = strs.Comment_with_Pos
 
-def convert_kai_penn_tree_file(path: str) -> typ.List[pt]:
+def convert_kai_penn_tree_file(path: str) -> typing.List[pt]:
     sents_raw = corp.BracketParseCorpusReader(
             root = "",
             fileids = path
@@ -72,7 +72,7 @@ def __strip_linear_comment_from_line(
 
         # ===END===
 
-def parse_kail(stream: io.TextIOBase) -> typ.List[pt]:
+def parse_kail(stream: io.TextIOBase) -> typing.List[pt]:
     """
         Parse a text stream in the Kail format.
 
@@ -84,7 +84,7 @@ def parse_kail(stream: io.TextIOBase) -> typ.List[pt]:
         -------
         trees: List[nltk.tree.ParentedTree]
     """
-    indent: typ.List[int] = [-1]
+    indent: typing.List[int] = [-1]
 
     res_tree: pt = pt(None, children = [])
     node_pointer: pt = res_tree
@@ -192,6 +192,159 @@ def parse_kail(stream: io.TextIOBase) -> typ.List[pt]:
 
         # ===END FOR===
     
+    return res_tree
+
+    # ===END===
+
+def parse_kai_penn(stream: io.TextIOBase) -> typing.List[pt]:
+    """
+        Parse a text stream in the NPCMJ format.
+
+        Parameters
+        ----------
+        stream: io.TextIOBase
+
+        Returns
+        -------
+        trees: List[nltk.tree.ParentedTree]
+    """
+
+    def split_line(line: str) -> typing.List[
+                                    typing.Tuple[
+                                        str,
+                                        int
+                                        ]
+                                    ]:
+        # ======
+        # go through every character
+        # ======
+        tokens = []
+        token_reading = ""
+        token_beginning_num = -1
+
+        def append_and_clear_cache():
+            # global token_reading
+            # global token_beginning_num
+            nonlocal tokens
+            nonlocal token_reading
+            nonlocal token_beginning_num
+
+            # you got a new token
+            tokens.append((token_reading, token_beginning_num))
+
+            token_reading = ""
+            token_beginning_num = -1
+
+            # ===END===
+
+        to_be_continued = False
+
+        for column, char in enumerate(line_without_comment):
+            if char in " \t\n()":
+                if to_be_continued: append_and_clear_cache()
+
+                if char in "()":
+                    token_reading += char
+                    token_beginning_num = column
+
+                    # immediate tokenization
+                    append_and_clear_cache()
+                else:
+                    # space
+                    # do nothing
+                    pass
+
+                # ===END IF===
+                
+                to_be_continued = False
+            else:
+                # ordinary character
+                # record the position of the new token
+                token_reading += char
+                if not to_be_continued: token_beginning_num = column
+
+                to_be_continued = True
+
+            # ===END IF===
+        
+        # final appending
+        if token_beginning_num > 0: append_and_clear_cache()
+
+        return tokens
+
+    res_tree: pt = pt(None, children = [])
+    node_pointer: pt = res_tree
+
+    for row, line_raw in enumerate(stream):
+        # ======
+        # Strip out comments
+        # ======
+        line_without_comment = __strip_linear_comment_from_line(
+                                                line_raw = line_raw.rstrip(),
+                                                row = row,
+                                                node_pointer = node_pointer,
+                                                comment_char = ";;"
+                                            )
+
+        # ======
+        # split the line into tokens
+        # ======
+        tokens = split_line(line_without_comment)
+
+        # ======
+        # go through each item
+        # ======
+        for token, column in tokens:
+            if token == "(":
+                # new node
+                new_node = pt(None, children = [])
+
+                node_pointer.append(new_node)
+
+                # move the pointer
+                node_pointer = new_node
+            elif token == ")":
+                # go back to the parent node
+
+                # if the current node has no label
+                # create an empty one
+                if node_pointer.label is None:
+                    node_pointer.set_label(
+                        lbcx(
+                            label = orc("", row, column),
+                            ICHed = orc(0, row, column),
+                            sort_info = orc("", row, column)
+                            )
+                    )
+                
+                # move the pointer to the parent
+                node_pointer = node_pointer.parent()
+            else:
+                if node_pointer.label() is None:
+                    # if the current node has no label
+                    # then this token must be that
+                    node_pointer.set_label(
+                        lbcx.parse_from_kai_penn(token, row)
+                    )
+                else:
+                    # we have found a terminal child node
+                    # add them as its child
+                    node_pointer.append(
+                        pt(
+                            node = lbcx(
+                                label = orc(token, row, column),
+                                ICHed = orc(0, row, column),
+                                sort_info = orc("", row, column)
+                                ),
+                            children = []
+                        )
+                    )
+                # ===END IF===
+            # ===END IF===
+        # ===END FOR===
+    
+    # TODO: check errors here
+
     return res_tree
 
     # ===END===

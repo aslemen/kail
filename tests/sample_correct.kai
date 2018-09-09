@@ -9,15 +9,18 @@
                  kishiyama
                  2017/11/21})
         (NP (NPR トロッコ)))
-  (ID 1_aozora_Akutagawa-1922;JP))
+  (ID 1_aozora_Akutagawa-1922;JP)) ;; BBCE
 
 (S (FRAG (NP (NPR 芥川龍之介)))
   (ID 2_aozora_Akutagawa-1922;JP))
 
 (S (IP-MAT (PP-SBJ (NP (IP-EMB (PP (NP (NML (CONJP (NP (NPR 小田原)))
+                                                ;; 小田原には何かがある．
                                            (NP (NPR 熱海（あたみ）)))
+                                            ;; 熱海には海があるわけではない，ということもない．
                                       (N 間))
-                                  (P-ROLE に))
+                                  (P-ROLE に　;;この助詞は，現在的には変な感じ．いまなら「で」だ．
+                                  ))
                               (PU 、)
                               (PP-SBJ (NP (PP (NP (N 軽便鉄道敷設（ふせつ）))
                                               (P-ROLE の))
