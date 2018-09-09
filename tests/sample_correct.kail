@@ -6,12 +6,14 @@ S
                     太郎
             P-OPTR
                 は
-        VB
-            死ん
+        VB  ;;COMMENT1
+            死ん           ;;COMMENT2
         AXD
             だ
+                        ;;COMMENT3
     ID
         1;kai_test
+        ;;COMMENT4
 S
     IP-MAT
         PP-SBJ 0 {TARO}

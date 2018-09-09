@@ -1,5 +1,6 @@
 import re
 import io
+import itertools
 import pathlib
 
 from nltk.tree import ParentedTree as pt
@@ -10,6 +11,7 @@ import typing as typ
 from . import structures as strs
 lbcx = strs.Label_Complex_with_Pos
 orc = strs.Object_with_Row_Column
+com = strs.Comment_with_Pos
 
 def convert_kai_penn_tree_file(path: str) -> typ.List[pt]:
     sents_raw = corp.BracketParseCorpusReader(
@@ -45,7 +47,43 @@ def convert_kai_penn_tree_file(path: str) -> typ.List[pt]:
 
         yield sent_pt
 
+def __strip_linear_comment_from_line(
+            line_raw: str, 
+            row: int, 
+            node_pointer: pt,
+            comment_char: str = ";;"
+        ) -> str:
+        split_result = line_raw.split(comment_char, 1)
+
+        line_cleared = split_result[0]
+
+        if len(split_result) > 1:
+            current_comment_raw = split_result[1]
+            current_comment = com(
+                                orc(
+                                    content = current_comment_raw,
+                                    row = row,
+                                    column = len(line_cleared)
+                                    )
+                                )
+            node_pointer.append(pt(current_comment, children = []))
+
+        return line_cleared
+
+        # ===END===
+
 def parse_kail(stream: io.TextIOBase) -> typ.List[pt]:
+    """
+        Parse a text stream in the Kail format.
+
+        Parameters
+        ----------
+        stream: io.TextIOBase
+
+        Returns
+        -------
+        trees: List[nltk.tree.ParentedTree]
+    """
     indent: typ.List[int] = [-1]
 
     res_tree: pt = pt(None, children = [])
@@ -55,17 +93,20 @@ def parse_kail(stream: io.TextIOBase) -> typ.List[pt]:
 
     for row, line_raw in enumerate(stream):
         # ======
-        # Strip out redundant whitespaces on the right side
-        # ======
-        line: str = line_raw.rstrip()
-
-        # ======
         # Strip out comments
         # ======
+        line_without_comment = __strip_linear_comment_from_line(
+                                                line_raw = line_raw.rstrip(),
+                                                row = row,
+                                                node_pointer = node_pointer,
+                                                comment_char = ";;"
+                                            )
 
         # ======
         # Firstly, check whether the line is empty
         # ======
+        line = line_without_comment.rstrip()
+
         if line == "": continue
 
         # ======

@@ -326,3 +326,50 @@ class Label_Complex_with_Pos:
                                 if self.sort_info.content else ""
             )
         # ===END===
+
+class Comment_with_Pos:
+    """
+        A representation of an NPCMJ/Kail comment with annotations of row-column information from the source document.
+    """
+    def __init__(
+            self,
+            comment: Object_with_Row_Column
+            ) -> "Comment_with_Pos":
+        """
+            The initializer.
+
+            Parameters
+            ----------
+            comment: Object_with_Row_Column[str]
+                A comment.
+                Example:
+                    abcedfg (for ";abcedfg\\n")
+        """
+        self.comment = comment
+        # ===END===
+    
+    @staticmethod
+    def parse(text: str, current_row: int, current_column: int):
+        return Comment_with_Pos(comment = text)
+
+        # ===END===
+    
+    def print_kai_penn(self) -> str:
+        return ";;" + str(self.comment)
+
+        # ===END===
+
+    def print_kail(self) -> str:
+        return ";;" + str(self.comment)
+
+        # ===END===
+
+    def __repr__(self):
+        return "<COMMENT: {text}>".format(text = repr(self.comment))
+
+        # ===END==
+    
+    def __str__(self):
+        return self.print_kai_penn()
+
+        # ===END===
