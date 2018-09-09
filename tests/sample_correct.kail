@@ -6,11 +6,11 @@ S
                     太郎
             P-OPTR
                 は
-        VB  ;;COMMENT1
-            死ん           ;;COMMENT2
+        VB  #COMMENT1
+            死ん           #COMMENT2
         AXD
             だ
-                        ;;COMMENT3
+                        #COMMENT3
     ID
         1;kai_test
         ;;COMMENT4

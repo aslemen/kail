@@ -360,7 +360,7 @@ class Comment_with_Pos:
         # ===END===
 
     def print_kail(self) -> str:
-        return ";;" + str(self.comment)
+        return "#" + str(self.comment)
 
         # ===END===
 

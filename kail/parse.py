@@ -99,7 +99,7 @@ def parse_kail(stream: io.TextIOBase) -> typing.List[pt]:
                                                 line_raw = line_raw.rstrip(),
                                                 row = row,
                                                 node_pointer = node_pointer,
-                                                comment_char = ";;"
+                                                comment_char = "#"
                                             )
 
         # ======
