@@ -15,7 +15,7 @@
 その他のときはPenn形式に戻すとかしないといけない．
 
 ## 依存するPython3 パッケージ
-- NLTK
+- NLTK（置き換えを検討）
 - click
 - pathlib
 - setup
@@ -32,18 +32,23 @@ python3 setup.py develop --uninstall
 ```
 
 ## 使い方
-### Penn -> Kail
-入力はファイルを通してのみである（標準入力を使う場合は，一旦一時ファイルに保存しておく）．
-こういう面倒くさい仕様は，NLTKのせいである．
+### Usage
 ```sh
-kail simplize <file>
+kail [OPTIONS]
 ```
 
-### Kail -> Penn
-入力は標準入力を通してのみである．
-```sh
-(cat <file>) | kail recover 
+### Options
 ```
+  -i, --input_format [penn|kail]
+  -o, --output_format [penn|kail]
+  --comments / --no_comments コメントを除去するか否か
+  --compact / --pretty 1行形式か，複数行形式化（-o pennの場合のみ）
+  -r, --input_file FILENAME 入力ファイル名（デフォルト：standard input）
+  -w, --output_file FILENAME　出力ファイル名（デフォルト：standard output）
+  --help                          Show this message and exit.
+```
+
+特に，`-i`と`-o`を同じ形式にすると，ちょうどデータの整形ができるようになる！
 
 ## サンプル
 ### Kail
