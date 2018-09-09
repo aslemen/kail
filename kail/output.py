@@ -1,6 +1,5 @@
 import re
 import itertools
-import copy
 
 from nltk.tree import ParentedTree as pt
 

@@ -1,10 +1,8 @@
 import re
 import io
 import itertools
-import pathlib
 
 from nltk.tree import ParentedTree as pt
-import nltk.corpus as corp
 
 import typing
 
@@ -12,40 +10,6 @@ from . import structures as strs
 lbcx = strs.Label_Complex_with_Pos
 orc = strs.Object_with_Row_Column
 com = strs.Comment_with_Pos
-
-def convert_kai_penn_tree_file(path: str) -> typing.List[pt]:
-    sents_raw = corp.BracketParseCorpusReader(
-            root = "",
-            fileids = path
-                ).parsed_sents()
-
-    for sent in sents_raw:
-        sent_pt: pt = pt.convert(sent)
-
-        def traverse_parse(tree):
-            res = None
-
-            if isinstance(tree, pt):
-
-                for i in range(len(tree)):
-                    tree[i] = traverse_parse(tree[i])
-
-                tree.set_label(lbcx.parse_from_kai_penn(tree.label()))
-                res = tree
-            else:
-                res = pt(
-                    node = lbcx(
-                            label = orc(str(tree), -1, 0),
-                            ICHed = orc(0, -1, -1),
-                            sort_info = orc("", -1, -1)
-                            ),
-                    children = []
-                )
-            return res
-
-        sent_pt = traverse_parse(sent_pt)
-
-        yield sent_pt
 
 def __strip_linear_comment_from_line(
             line_raw: str, 

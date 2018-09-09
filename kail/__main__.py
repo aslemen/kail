@@ -1,6 +1,4 @@
 import click
-import pathlib
-import sys
 
 from . import parse
 from . import output
