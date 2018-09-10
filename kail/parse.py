@@ -2,14 +2,13 @@ import re
 import io
 import itertools
 
-from nltk.tree import ParentedTree as pt
-
 import typing
 
 from . import structures as strs
 lbcx = strs.Label_Complex_with_Pos
 orc = strs.Object_with_Row_Column
 com = strs.Comment_with_Pos
+pt = strs.TreeWithParent
 
 def __strip_linear_comment_from_line(
             line_raw: str, 
@@ -116,7 +115,7 @@ def parse_kail(stream: io.TextIOBase) -> typing.List[pt]:
             # keep on that tree depth
             # make a sibling
             current_node = pt(current_label_complex, children = [])
-            node_pointer.parent().append(current_node)
+            node_pointer.get_parent().append(current_node)
 
         else:
             # go back to the parent
@@ -126,7 +125,7 @@ def parse_kail(stream: io.TextIOBase) -> typing.List[pt]:
                 # discard the previous indent
                 indent.pop()
                 # make the pointer point to the ancestor
-                node_pointer = node_pointer.parent()
+                node_pointer = node_pointer.get_parent()
 
                 # get the indent of the ancestor
                 parent_indent = indent[-1]
@@ -272,7 +271,7 @@ def parse_kai_penn(stream: io.TextIOBase) -> typing.List[pt]:
 
                 # if the current node has no label
                 # create an empty one
-                if node_pointer.label is None:
+                if node_pointer.get_label() is None:
                     node_pointer.set_label(
                         lbcx(
                             label = orc("", row, column),
@@ -282,9 +281,9 @@ def parse_kai_penn(stream: io.TextIOBase) -> typing.List[pt]:
                     )
                 
                 # move the pointer to the parent
-                node_pointer = node_pointer.parent()
+                node_pointer = node_pointer.get_parent()
             else:
-                if node_pointer.label() is None:
+                if node_pointer.get_label() is None:
                     # if the current node has no label
                     # then this token must be that
                     node_pointer.set_label(

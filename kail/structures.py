@@ -2,8 +2,7 @@ import typing
 import io
 import re
 import collections as coll
-
-import nltk.tree as trees
+import itertools
 
 """
     This module provides classes that represent various linguistic structures.
@@ -371,5 +370,168 @@ class Comment_with_Pos:
     
     def __str__(self):
         return self.print_kai_penn()
+
+        # ===END===
+
+class TreeWithParent(coll.deque):
+    def __init__(
+            self, 
+            node: object = None, 
+            children: coll.deque = tuple(),
+            parent: "TreeWithParent" = None
+        ):
+        super().__init__(self)
+
+        self.set_label(node)
+        self.extend(children)
+        self.set_parent(parent)
+        # ===END===
+
+    # ======
+    # Helpers
+    # ======
+
+    @staticmethod
+    def __check_type_TreeWithParent(x):
+        if x is None: return
+        if not isinstance(x, TreeWithParent):
+            raise ValueError(TreeWithParent)
+        # ===END===
+
+    @staticmethod
+    def __check_type_TreeWithParent_parented(x):
+        TreeWithParent.__check_type_TreeWithParent(x)
+
+        if x.get_parent() is not None:
+            raise Exception(
+                "The item {repr} has already got a parent {par}!".format(
+                    repr = repr(x),
+                    par = repr(x.get_parent())
+                    )
+                )
+        # ===END===
+
+    # ======
+    # Parent controls
+    # ======
+
+    def get_label(self): return self.__label
+    def set_label(self, l): self.__label = l
+
+    def get_parent(self): return self.__parent
+    def set_parent(self, p: "TreeWithParent"):
+        self.__check_type_TreeWithParent(p)
+        self.__parent = p
+        # ===END===
+
+    # ======
+    # Insertion
+    # ======
+
+    def append(self, x: "TreeWithParent"):
+        self.__check_type_TreeWithParent_parented(x)
+
+        x.set_parent(self)
+        super().append(x)
+
+        # ===END===
+
+    def appendleft(self, x: "TreeWithParent"):
+        self.__check_type_TreeWithParent_parented(x)
+
+        x.set_parent(self)
+        super().appendleft(x)
+
+        # ===END===
+
+    def extend(self, x: typing.Iterable):
+        for child in x:
+            self.append(child)
+
+        # ===END===
+
+    def extendleft(self, x: typing.Iterable):
+        for child in x:
+            self.appendleft(child)
+
+        # ===END===
+
+    def insert(self, i, x):
+        self.__check_type_TreeWithParent_parented(x)
+
+        x.set_parent(self)
+        super().insert(i, x)
+        # ===END===
+
+    # ======
+    # Deletion
+    # ======
+
+    def pop(self):
+        popped: "TreeWithParent" = super().pop()
+        popped.set_parent(None)
+        return popped
+
+        # ===END===
+    
+    def popleft(self):
+        popped: "TreeWithParent" = super().popleft()
+        popped.set_parent(None)
+        return popped
+        
+        # ===END===
+    
+    def remove(self, value: "TreeWithParent"):
+        removed: "TreeWithParent" = super().remove(value)
+        removed.set_parent(None)
+        return removed
+
+        # ===END===
+
+    # ======
+    # Tree traversing
+    # ======
+    def get_parent_index(self): return self.get_parent().index(self)
+
+    def get_left_siblings(self):
+        parent = self.get_parent()
+        if not isinstance(parent, TreeWithParent): return None
+
+        index = self.get_parent_index()
+        return itertools.islice(
+            iter(self),
+            index
+        )
+        
+        # ===END===
+
+    def get_right_siblings(self):
+        parent = self.get_parent()
+        if not isinstance(parent, TreeWithParent): return None
+
+        index = self.get_parent_index()
+
+        return itertools.islice(
+            iter(self),
+            index + 1,
+            None
+        )
+        
+        # ===END===
+
+    def get_all_siblings(self):
+        left = self.get_left_siblings()
+        right = self.get_right_siblings()
+
+        if left is None:
+            if right is None:
+                return None
+            else:
+                return right
+        else:
+            if right is None:
+                return left
+            else:
+                return itertools.chain(left, right)
 
         # ===END===

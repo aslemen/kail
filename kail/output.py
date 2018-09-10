@@ -1,9 +1,8 @@
 import re
 import itertools
 
-from nltk.tree import ParentedTree as pt
-
 from . import structures as strs
+pt = strs.TreeWithParent
 
 import typing
 
@@ -37,16 +36,17 @@ def print_kai_penn_indented(
 
         for comment in filter(
                         lambda x: isinstance(
-                            x.label(), 
+                            x.get_label(), 
                             strs.Comment_with_Pos
                         ),
                         tree
                     ):
-            parent: pt = comment.parent()
-            grandparent: pt = parent.parent()
+            parent: pt = comment.get_parent()
+            grandparent: pt = parent.get_parent()
 
-            if comment.right_sibling() is None:
-                # comment on the rightmost of its parent
+            if not comment.get_right_siblings():
+                # the comment is on the rightmost of its parent
+
                 if grandparent is not None:
                     # if it is raisable
                     parent.remove(comment)
@@ -61,7 +61,7 @@ def print_kai_penn_indented(
             show_comments = True
         ) -> str:
 
-        label_object: str = tree.label()
+        label_object: str = tree.get_label()
         self_label_raw: str = None
 
         if isinstance(label_object, strs.Label_Complex_with_Pos):
