@@ -1,7 +1,7 @@
 import re
 import itertools
 
-from . import structures as strs
+import kail.structures as strs
 pt = strs.TreeWithParent
 
 import typing

@@ -4,7 +4,7 @@ import itertools
 
 import typing
 
-from . import structures as strs
+import kail.structures as strs
 lbcx = strs.Label_Complex_with_Pos
 orc = strs.Object_with_Row_Column
 com = strs.Comment_with_Pos

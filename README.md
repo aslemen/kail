@@ -23,6 +23,11 @@
 python3 setup.py develop --user
 ```
 
+## コンパイル
+```sh
+nuitka kail --recurse-all
+```
+
 ## アンインストール
 ```sh
 python3 setup.py develop --uninstall

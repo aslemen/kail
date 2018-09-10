@@ -1,7 +1,7 @@
 import click
 
-from . import parse
-from . import output
+import kail.parse as parse
+import kail.output as output
 
 @click.command()
 @click.option(
@@ -72,3 +72,5 @@ def routine(
             output.print_kail(tree) for tree in trees)
             )
     # ===END===
+
+routine()
