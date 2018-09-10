@@ -1,7 +1,6 @@
 import click
 
-import kail.parse as parse
-import kail.output as output
+import kail.structures as strs
 
 @click.command()
 @click.option(
@@ -44,33 +43,32 @@ def routine(
     trees = None
     
     if input_format == "penn":
-        trees = parse.parse_kai_penn(input_file)
+        trees = strs.TreeWithParent.parse_kai_penn(input_file)
     elif input_format == "kail":
-        trees = parse.parse_kail(input_file)
+        trees = strs.TreeWithParent.parse_kail(input_file)
 
     # write trees
     if output_format == "penn":
         if compact:
             output_file.write(
                 "\n\n".join(
-                    output.print_kai_penn_squeezed(
-                        tree
+                    tree.print_kai_penn_squeezed(
                         ) for tree in trees
                 )
             )
         else:
             output_file.write(
                 "\n\n".join(
-                    output.print_kai_penn_indented(
-                        tree, 
+                    tree.print_kai_penn_indented(
                         show_comments = comments
                         ) for tree in trees
                 )
             )
     elif output_format == "kail":
         output_file.write("\n".join(
-            output.print_kail(tree) for tree in trees)
+            tree.print_kail() for tree in trees
             )
+        )
     # ===END===
 
 routine()

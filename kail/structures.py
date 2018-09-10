@@ -372,6 +372,9 @@ class Comment_with_Pos:
         return self.print_kai_penn()
 
         # ===END===
+lbcx = Label_Complex_with_Pos
+orc = Object_with_Row_Column
+com = Comment_with_Pos
 
 class TreeWithParent(coll.deque):
     def __init__(
@@ -535,3 +538,487 @@ class TreeWithParent(coll.deque):
                 return itertools.chain(left, right)
 
         # ===END===
+
+    # ======
+    # Parsing
+    # ======
+
+
+    @staticmethod
+    def __strip_linear_comment_from_line(
+            line_raw: str, 
+            row: int, 
+            node_pointer: "TreeWithParent",
+            comment_char: str = ";;"
+        ) -> str:
+        split_result = line_raw.split(comment_char, 1)
+
+        line_cleared = split_result[0]
+
+        if len(split_result) > 1:
+            current_comment_raw = split_result[1]
+            current_comment = com(
+                                orc(
+                                    content = current_comment_raw,
+                                    row = row,
+                                    column = len(line_cleared)
+                                    )
+                                )
+            node_pointer.append(TreeWithParent(current_comment, children = []))
+
+        return line_cleared
+
+        # ===END===
+
+    @staticmethod
+    def parse_kail(stream: io.TextIOBase) -> typing.List["TreeWithParent"]:
+        """
+            Parse a text stream in the Kail format.
+
+            Parameters
+            ----------
+            stream: io.TextIOBase
+
+            Returns
+            -------
+            trees: List[nltk.tree.ParentedTree]
+        """
+        indent: typing.List[int] = [-1]
+
+        res_tree: "TreeWithParent" = TreeWithParent(None, children = [])
+        node_pointer: "TreeWithParent" = res_tree
+
+        re_indent: "_sre.SRE_Match" = re.compile(r"[ \t]*")
+
+        for row, line_raw in enumerate(stream):
+            # ======
+            # Strip out comments
+            # ======
+            line_without_comment = TreeWithParent.__strip_linear_comment_from_line(
+                                                    line_raw = line_raw.rstrip(),
+                                                    row = row,
+                                                    node_pointer = node_pointer,
+                                                    comment_char = "#"
+                                                )
+
+            # ======
+            # Firstly, check whether the line is emTreeWithParenty
+            # ======
+            line = line_without_comment.rstrip()
+
+            if line == "": continue
+
+            # ======
+            # The line being non-emTreeWithParenty, find the indent
+            # ======
+
+            # Extract the indent
+            current_indent_raw: "_sre.SRE_PATTERN" = re_indent.match(line)
+
+            # Count the indent
+            current_indent: int = 0
+
+            for char in current_indent_raw.group(0):
+                if char == r"\t":
+                    current_indent += 2
+                else:
+                    current_indent += 1
+
+            # ======
+            # find the items for label complex
+            # ======
+            current_label_complex: lbcx = lbcx.parse_from_kail(line, row)
+
+            # ======
+            # Create a chile node
+            # ======
+            current_node = TreeWithParent(current_label_complex, children = [])
+
+            # ======
+            # Position the label in a tree
+            # ======
+
+            # Detect embedding / de-embedding
+            previous_indent: int = indent[-1]
+
+            if current_indent > previous_indent:
+                node_pointer.append(current_node)
+
+                # record the current indent
+                indent.append(current_indent)
+
+            elif current_indent == previous_indent:
+                # keep on that tree deTreeWithParenth
+                # make a sibling
+                current_node = TreeWithParent(current_label_complex, children = [])
+                node_pointer.get_parent().append(current_node)
+
+            else:
+                # go back to the parent
+
+                # find the anchor
+                while True:
+                    # discard the previous indent
+                    indent.pop()
+                    # make the pointer point to the ancestor
+                    node_pointer = node_pointer.get_parent()
+
+                    # get the indent of the ancestor
+                    parent_indent = indent[-1]
+
+                    if current_indent > parent_indent:
+                        raise SyntaxError(
+                            "An unanchorable indent is found " \
+                            "at Line {row_add}, Column {col_add}".format(
+                                row_add = row + 1,
+                                col_add = current_label_complex.label.column + 1
+                                )
+                        )
+                    elif current_indent == parent_indent:
+                        # anchor the current node NEXT TO the ancestor
+                        # make a sibling
+                        current_node = TreeWithParent(current_label_complex, children = [])
+                        node_pointer.parent().append(current_node)
+
+                        # stop searching
+                        break
+                    else: pass # search further
+                
+                # ===END WHILE===
+
+            # Set the pointer to the newly created node
+            node_pointer = current_node
+
+            # ===END FOR===
+        
+        return res_tree
+
+        # ===END===
+
+    @staticmethod
+    def parse_kai_penn(stream: io.TextIOBase) -> typing.List["TreeWithParent"]:
+        """
+            Parse a text stream in the NPCMJ format.
+
+            Parameters
+            ----------
+            stream: io.TextIOBase
+
+            Returns
+            -------
+            trees: List[nltk.tree.ParentedTree]
+        """
+
+        def split_line(line: str) -> typing.List[
+                                        typing.Tuple[
+                                            str,
+                                            int
+                                            ]
+                                        ]:
+            # ======
+            # go through every character
+            # ======
+            tokens = []
+            token_reading = ""
+            token_beginning_num = -1
+
+            def append_and_clear_cache():
+                # global token_reading
+                # global token_beginning_num
+                nonlocal tokens
+                nonlocal token_reading
+                nonlocal token_beginning_num
+
+                # you got a new token
+                tokens.append((token_reading, token_beginning_num))
+
+                token_reading = ""
+                token_beginning_num = -1
+
+                # ===END===
+
+            to_be_continued = False
+
+            for column, char in enumerate(line_without_comment):
+                if char in " \t\n()":
+                    if to_be_continued: append_and_clear_cache()
+
+                    if char in "()":
+                        token_reading += char
+                        token_beginning_num = column
+
+                        # immediate tokenization
+                        append_and_clear_cache()
+                    else:
+                        # space
+                        # do nothing
+                        pass
+
+                    # ===END IF===
+                    
+                    to_be_continued = False
+                else:
+                    # ordinary character
+                    # record the position of the new token
+                    token_reading += char
+                    if not to_be_continued: token_beginning_num = column
+
+                    to_be_continued = True
+
+                # ===END IF===
+            
+            # final appending
+            if token_beginning_num > 0: append_and_clear_cache()
+
+            return tokens
+
+        res_tree: "TreeWithParent" = TreeWithParent(None, children = [])
+        node_pointer: "TreeWithParent" = res_tree
+
+        for row, line_raw in enumerate(stream):
+            # ======
+            # Strip out comments
+            # ======
+            line_without_comment = TreeWithParent.__strip_linear_comment_from_line(
+                                                    line_raw = line_raw.rstrip(),
+                                                    row = row,
+                                                    node_pointer = node_pointer,
+                                                    comment_char = ";;"
+                                                )
+
+            # ======
+            # split the line into tokens
+            # ======
+            tokens = split_line(line_without_comment)
+
+            # ======
+            # go through each item
+            # ======
+            for token, column in tokens:
+                if token == "(":
+                    # new node
+                    new_node = TreeWithParent(None, children = [])
+
+                    node_pointer.append(new_node)
+
+                    # move the pointer
+                    node_pointer = new_node
+                elif token == ")":
+                    # go back to the parent node
+
+                    # if the current node has no label
+                    # create an emTreeWithParenty one
+                    if node_pointer.get_label() is None:
+                        node_pointer.set_label(
+                            lbcx(
+                                label = orc("", row, column),
+                                ICHed = orc(0, row, column),
+                                sort_info = orc("", row, column)
+                                )
+                        )
+                    
+                    # move the pointer to the parent
+                    node_pointer = node_pointer.get_parent()
+                else:
+                    if node_pointer.get_label() is None:
+                        # if the current node has no label
+                        # then this token must be that
+                        node_pointer.set_label(
+                            lbcx.parse_from_kai_penn(token, row)
+                        )
+                    else:
+                        # we have found a terminal child node
+                        # add them as its child
+                        node_pointer.append(
+                            TreeWithParent(
+                                node = lbcx(
+                                    label = orc(token, row, column),
+                                    ICHed = orc(0, row, column),
+                                    sort_info = orc("", row, column)
+                                    ),
+                                children = []
+                            )
+                        )
+                    # ===END IF===
+                # ===END IF===
+            # ===END FOR===
+        
+        # TODO: check errors here
+
+        return res_tree
+
+        # ===END===
+
+    # ======
+    # Printing
+    # ======
+    def print_kai_penn_indented(
+            self, 
+            indent: int = 0, 
+            show_comments = True
+        ) -> str:
+        """
+            Generate the well-indented representation of this tree, given the overall indent
+
+            Parameters
+            ----------
+            indent: int, default 0
+                the overall indent.
+            show_comments: bool, default True
+                whether to show comments
+
+            Returns
+            -------
+            indented_tree: str
+                the indented tree representation
+        """
+
+        def __raise_comments(tree: "TreeWithParent") -> "TreeWithParent":
+            # A helper method that raise comment nodes.
+            for child in tree:
+                __raise_comments(child)
+
+            for comment in filter(
+                            lambda x: isinstance(
+                                x.get_label(), 
+                                Comment_with_Pos
+                            ),
+                            tree
+                        ):
+                parent: "TreeWithParent" = comment.get_parent()
+                grandparent: "TreeWithParent" = parent.get_parent()
+
+                if not comment.get_right_siblings():
+                    # the comment is on the rightmost of its parent
+
+                    if grandparent is not None:
+                        # if it is raisable
+                        parent.remove(comment)
+                        grandparent.insert(parent.parent_index() + 1, comment)
+
+            return tree
+            # ===END===
+
+        def __internal_routine(
+                tree: "TreeWithParent", 
+                indent: int = 0, 
+                show_comments = True
+            ) -> str:
+
+            label_object: str = tree.get_label()
+            self_label_raw: str = None
+
+            if isinstance(label_object, Label_Complex_with_Pos):
+                self_label_raw = label_object.print_kai_penn()
+            elif isinstance(label_object, Comment_with_Pos):
+                if show_comments:
+                    self_label_raw = str(label_object)
+                else:
+                    return ""
+            else:
+                self_label_raw = str(label_object)
+
+                # ===END IF===
+
+            if len(tree) == 0:
+                # if this is a terminal node
+                return " " * indent + self_label_raw
+            else:
+                # if this is a non-terminal node
+
+                # get the representation of the subtrees
+                ## note: calculation of the indent for the second and latter subtrees
+                ## ................. (labellabellabel..........label (..... 
+                ## ^===[indent]=====^_^====[len(self.label)]=======^_^----------
+                str_subtrees: typing.List[str] = [
+                    res for res in (
+                            __internal_routine(
+                                st,
+                                indent = indent \
+                                        + 1 \
+                                        + len(self_label_raw) \
+                                        + 1,
+                                show_comments = show_comments
+                                )
+                            for st in tree
+                        ) if res
+                    ]
+
+                # cut out the spaces at the beginning and the end of the first subtree
+                str_subtrees[0] = str_subtrees[0].strip()
+
+                # generate
+                return "{indent}({label} {subtrees})".format(
+                            indent = " " * indent,
+                            label = self_label_raw,
+                            subtrees = "\n".join(str_subtrees)
+                            )
+
+                # ===END IF===
+
+            # ===END===
+
+        tree_comments_raised = __raise_comments(self)
+        return __internal_routine(tree_comments_raised, indent, show_comments)
+        # ===END===
+
+    def print_kai_penn_squeezed(self) -> str:
+        """
+            Generate the one-line representation of this tree, given the overall indent.
+
+            Parameters
+            ----------
+            indent: int, default 0
+                the overall indent.
+
+            Returns
+            -------
+            indented_tree: str
+                the one-line tree representation
+        """
+
+        return re.sub(
+            r"\s+",
+            repl = " ",
+            string = self.print_kai_penn_indented(show_comments = False)
+            )
+
+        # ===END===
+
+    def print_kail(self, indent_amount: int = 2, indent: int = 0) -> str:
+        """
+            Generate the representation of this tree
+            in the Kail style.
+
+            Parameters
+            ----------
+            indent: int, default 0
+                the overall indent.
+
+            Returns
+            -------
+            indented_tree: str
+                the one-line tree representation
+        """
+        label_object: str = self.get_label()
+        self_label_raw: str = None
+
+        if isinstance(label_object, Label_Complex_with_Pos):
+            self_label_raw = label_object.print_kail()
+        elif isinstance(label_object, Comment_with_Pos):
+            self_label_raw = label_object.print_kail()
+        else:
+            self_label_raw = str(label_object)
+
+        return (" " * indent) + "\n".join(
+                        itertools.chain(
+                            (self_label_raw, ),
+                            map(
+                                lambda subtree: subtree.print_kail(
+                                    indent_amount = indent_amount,
+                                    indent = indent + indent_amount
+                                    ),
+                                iter(self)
+                            )
+                        )
+        )
