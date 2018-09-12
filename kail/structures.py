@@ -3,6 +3,7 @@ import io
 import re
 import collections as coll
 import itertools
+import copy
 
 """
     This module provides classes that represent various linguistic structures.
@@ -164,6 +165,10 @@ class Label_Complex_with_Pos:
             )
 
         current_items: "_sre.SRE_Match" = re_str.match(text)
+
+        import sys
+        sys.stderr.write(text)
+        sys.stderr.write("\n")
 
         # Label
         current_label = Object_with_Row_Column(
@@ -482,9 +487,9 @@ class TreeWithParent(coll.deque):
         # ===END===
     
     def remove(self, value: "TreeWithParent"):
-        removed: "TreeWithParent" = super().remove(value)
-        removed.set_parent(None)
-        return removed
+        super().remove(value)
+        value.set_parent(None)
+        return value
 
         # ===END===
 
@@ -493,7 +498,7 @@ class TreeWithParent(coll.deque):
     # ======
     def get_parent_index(self): return self.get_parent().index(self)
 
-    def get_left_siblings(self):
+    def iter_left_siblings(self):
         parent = self.get_parent()
         if not isinstance(parent, TreeWithParent): return None
 
@@ -505,7 +510,7 @@ class TreeWithParent(coll.deque):
         
         # ===END===
 
-    def get_right_siblings(self):
+    def iter_right_siblings(self):
         parent = self.get_parent()
         if not isinstance(parent, TreeWithParent): return None
 
@@ -519,7 +524,7 @@ class TreeWithParent(coll.deque):
         
         # ===END===
 
-    def get_all_siblings(self):
+    def iter_all_siblings(self):
         left = self.get_left_siblings()
         right = self.get_right_siblings()
 
@@ -536,10 +541,82 @@ class TreeWithParent(coll.deque):
 
         # ===END===
 
+    def traverse_dfs_pre(self):
+        yield self
+        for child in iter(self): yield from child.traverse_dfs_pre()
+        # ===END===
+
+    def traverse_dfs_post(self):
+        for child in iter(self): yield from child.traverse_dfs_pre()
+        yield self
+        # ===END===
+
+    def iter_comments(self):
+        return filter(
+            lambda x: isinstance(x.get_label(), Comment_with_Pos),
+            self.traverse_dfs_pre()
+        )
+        # ===END===
+
+    # ======
+    # Comment Manupilation
+    # ======
+    def raise_comments_on_right_corner_one_level_above(self) -> None:
+        """
+            A helper method to raise comment nodes in this tree.
+        """
+        def is_right_corner_and_raisable(tree: "TreeWithParent") -> bool:
+            return (not tree.iter_right_siblings()) \
+                and (not tree.get_parent().get_parent())
+
+            # ===END===
+
+        for comment_bottom in filter(
+            is_right_corner_and_raisable,
+            self.iter_comments()
+        ):
+            parent = comment_bottom.get_parent()
+            grandparent = parent.get_parent()
+
+            parent.remove(comment_bottom)
+            grandparent.insert(parent.parent_index() + 1, comment_bottom)
+
+        # ===END===
+
+    def raise_comments_out(self) -> None:
+        self_parent = self.get_parent()
+        index_right_of_self_parent = self.get_parent_index() + 1
+        
+        if self_parent is not None:
+            comments = list(self.iter_comments())
+
+            for comment in comments:
+                comment_grandparent = comment.get_parent().get_parent()
+                if comment_grandparent:
+                    # it got a grandparent
+
+                    # cut off the comment
+                    comment.get_parent().remove(comment)
+
+                    # insert it again
+                    self_parent.insert(index_right_of_self_parent, comment)
+
+                    # move the right boundary of this tree
+                    index_right_of_self_parent += 1
+                else:
+                    # it got no grandparent
+                    # (i.e. It is immediately hung on the root of the document)
+                    # do nothing since you don't need to do anything
+                    pass
+        else:
+            # do nothing
+            pass
+
+        # ===END===
+
     # ======
     # Parsing
     # ======
-
 
     @staticmethod
     def __strip_linear_comment_from_line(
@@ -870,96 +947,62 @@ class TreeWithParent(coll.deque):
                 the indented tree representation
         """
 
-        def __raise_comments(tree: "TreeWithParent") -> "TreeWithParent":
-            # A helper method that raise comment nodes.
-            for child in tree:
-                __raise_comments(child)
+        label_object: str = self.get_label()
+        self_label_raw: str = None
 
-            for comment in filter(
-                            lambda x: isinstance(
-                                x.get_label(), 
-                                Comment_with_Pos
-                            ),
-                            tree
-                        ):
-                parent: "TreeWithParent" = comment.get_parent()
-                grandparent: "TreeWithParent" = parent.get_parent()
-
-                if not comment.get_right_siblings():
-                    # the comment is on the rightmost of its parent
-
-                    if grandparent is not None:
-                        # if it is raisable
-                        parent.remove(comment)
-                        grandparent.insert(parent.parent_index() + 1, comment)
-
-            return tree
-            # ===END===
-
-        def __internal_routine(
-                tree: "TreeWithParent", 
-                indent: int = 0, 
-                show_comments = True
-            ) -> str:
-
-            label_object: str = tree.get_label()
-            self_label_raw: str = None
-
-            if isinstance(label_object, Label_Complex_with_Pos):
-                self_label_raw = label_object.print_kai_penn()
-            elif isinstance(label_object, Comment_with_Pos):
-                if show_comments:
-                    self_label_raw = str(label_object)
-                else:
-                    return ""
-            else:
+        if isinstance(label_object, Label_Complex_with_Pos):
+            self_label_raw = label_object.print_kai_penn()
+        elif isinstance(label_object, Comment_with_Pos):
+            if show_comments:
                 self_label_raw = str(label_object)
-
-                # ===END IF===
-
-            if len(tree) == 0:
-                # if this is a terminal node
-                return " " * indent + self_label_raw
             else:
-                # if this is a non-terminal node
+                return ""
+        else:
+            self_label_raw = str(label_object)
 
-                # get the representation of the subtrees
-                ## note: calculation of the indent for the second and latter subtrees
-                ## ................. (labellabellabel..........label (..... 
-                ## ^===[indent]=====^_^====[len(self.label)]=======^_^----------
-                str_subtrees: typing.List[str] = [
-                    res for res in (
-                            __internal_routine(
-                                st,
-                                indent = indent \
-                                        + 1 \
-                                        + len(self_label_raw) \
-                                        + 1,
-                                show_comments = show_comments
-                                )
-                            for st in tree
-                        ) if res
-                    ]
+            # ===END IF===
 
-                # cut out the spaces at the beginning and the end of the first subtree
-                str_subtrees[0] = str_subtrees[0].strip()
+        if len(self) == 0:
+            # if this is a terminal node
+            return " " * indent + self_label_raw
+        else:
+            # if this is a non-terminal node
 
-                # generate
-                return "{indent}({label} {subtrees})".format(
-                            indent = " " * indent,
-                            label = self_label_raw,
-                            subtrees = "\n".join(str_subtrees)
+            # get the representation of the subtrees
+            ## note: calculation of the indent for the second and latter subtrees
+            ## ................. (labellabellabel..........label (..... 
+            ## ^===[indent]=====^_^====[len(self.label)]=======^_^----------
+            str_subtrees: typing.List[str] = [
+                res for res in (
+                        st.print_kai_penn_indented(
+                            indent = indent \
+                                    + 1 \
+                                    + len(self_label_raw) \
+                                    + 1,
+                            show_comments = show_comments
                             )
+                        for st in iter(self)
+                    ) if res
+                ]
 
-                # ===END IF===
+            # cut out the spaces at the beginning and the end of the first subtree
+            str_subtrees[0] = str_subtrees[0].strip()
 
-            # ===END===
+            # generate
+            return "{indent}({label} {subtrees})".format(
+                        indent = " " * indent,
+                        label = self_label_raw,
+                        subtrees = "\n".join(str_subtrees)
+                        )
 
-        tree_comments_raised = __raise_comments(self)
-        return __internal_routine(tree_comments_raised, indent, show_comments)
+            # ===END IF===
+
         # ===END===
 
-    def print_kai_penn_squeezed(self) -> str:
+    def print_kai_penn_squeezed(
+            self, 
+            show_comments = True
+            ) -> str:
         """
             Generate the one-line representation of this tree, given the overall indent.
 
@@ -973,11 +1016,10 @@ class TreeWithParent(coll.deque):
             indented_tree: str
                 the one-line tree representation
         """
-
         return re.sub(
             r"\s+",
             repl = " ",
-            string = self.print_kai_penn_indented(show_comments = False)
+            string = self.print_kai_penn_indented(show_comments = show_comments)
             )
 
         # ===END===

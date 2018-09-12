@@ -3251,7 +3251,7 @@
           (VB 断続)
           (VB0 し)
           (P-CONN て)
-          (VB2 いる)
-          (PU 。)
-          (PU …………))
-  (ID 152_aozora_Akutagawa-1922;JP))
+          (VB2 いる) ;; Comment A
+          (PU 。) ;; Comment B
+          (PU …………)) ;; Comment C
+  (ID 152_aozora_Akutagawa-1922;JP)) ;; Comment D

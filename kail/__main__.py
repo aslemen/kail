@@ -50,21 +50,48 @@ def routine(
     # write trees
     if output_format == "penn":
         if compact:
+            # One-line mode
+
+            # Raise out comments
+            for tree in list(iter(trees)):
+                tree.raise_comments_out()
+            # copy needed?
+
+            # Print
             output_file.write(
-                "\n\n".join(
-                    tree.print_kai_penn_squeezed(
-                        ) for tree in trees
+                "\n".join(
+                    filter(
+                        None,
+                        (
+                            tree.print_kai_penn_squeezed(
+                                show_comments = comments
+                                ) for tree in trees
+                        )
+                    )
                 )
             )
         else:
+            # Pretty mode
+
+            # Raise out comments on rightmost-corners
+            for tree in list(iter(trees)):
+                tree.raise_comments_on_right_corner_one_level_above()
+            # copy needed?
+
+            # Print
             output_file.write(
                 "\n\n".join(
-                    tree.print_kai_penn_indented(
-                        show_comments = comments
-                        ) for tree in trees
+                    filter(None,
+                        (
+                            tree.print_kai_penn_indented(
+                                show_comments = comments
+                                ) for tree in trees
+                        )
+                    )
                 )
             )
     elif output_format == "kail":
+        # Pretty mode only
         output_file.write("\n".join(
             tree.print_kail() for tree in trees
             )
