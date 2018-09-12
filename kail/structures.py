@@ -372,9 +372,6 @@ class Comment_with_Pos:
         return self.print_kai_penn()
 
         # ===END===
-lbcx = Label_Complex_with_Pos
-orc = Object_with_Row_Column
-com = Comment_with_Pos
 
 class TreeWithParent(coll.deque):
     def __init__(
@@ -557,8 +554,8 @@ class TreeWithParent(coll.deque):
 
         if len(split_result) > 1:
             current_comment_raw = split_result[1]
-            current_comment = com(
-                                orc(
+            current_comment = Comment_with_Pos(
+                                Object_with_Row_Column(
                                     content = current_comment_raw,
                                     row = row,
                                     column = len(line_cleared)
@@ -627,7 +624,7 @@ class TreeWithParent(coll.deque):
             # ======
             # find the items for label complex
             # ======
-            current_label_complex: lbcx = lbcx.parse_from_kail(line, row)
+            current_label_complex: Label_Complex_with_Pos = Label_Complex_with_Pos.parse_from_kail(line, row)
 
             # ======
             # Create a chile node
@@ -810,10 +807,10 @@ class TreeWithParent(coll.deque):
                     # create an emTreeWithParenty one
                     if node_pointer.get_label() is None:
                         node_pointer.set_label(
-                            lbcx(
-                                label = orc("", row, column),
-                                ICHed = orc(0, row, column),
-                                sort_info = orc("", row, column)
+                            Label_Complex_with_Pos(
+                                label = Object_with_Row_Column("", row, column),
+                                ICHed = Object_with_Row_Column(0, row, column),
+                                sort_info = Object_with_Row_Column("", row, column)
                                 )
                         )
                     
@@ -824,17 +821,17 @@ class TreeWithParent(coll.deque):
                         # if the current node has no label
                         # then this token must be that
                         node_pointer.set_label(
-                            lbcx.parse_from_kai_penn(token, row)
+                            Label_Complex_with_Pos.parse_from_kai_penn(token, row)
                         )
                     else:
                         # we have found a terminal child node
                         # add them as its child
                         node_pointer.append(
                             TreeWithParent(
-                                node = lbcx(
-                                    label = orc(token, row, column),
-                                    ICHed = orc(0, row, column),
-                                    sort_info = orc("", row, column)
+                                node = Label_Complex_with_Pos(
+                                    label = Object_with_Row_Column(token, row, column),
+                                    ICHed = Object_with_Row_Column(0, row, column),
+                                    sort_info = Object_with_Row_Column("", row, column)
                                     ),
                                 children = []
                             )
