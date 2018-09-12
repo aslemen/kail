@@ -160,7 +160,7 @@ class Label_Complex_with_Pos:
             The instance created from the label text.
         """
         re_str: "_sre.SRE_Match" = re.compile(
-            r"^([_\d\w\-]*?)(?:-([0-9]+))?(?:;({\w+}|\*.*\*|\*))?$"
+            r"^([_\d\w\-]*?)(?:-([0-9]+))?(?:;({[^\s{}]+}|\*.*\*|\*))?$"
             )
 
         current_items: "_sre.SRE_Match" = re_str.match(text)
